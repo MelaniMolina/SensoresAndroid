@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "699964935067",
+    "project_id": "white-caster-395922",
+    "storage_bucket": "white-caster-395922.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:699964935067:android:dc66830243662dda046f3e",
+        "android_client_info": {
+          "package_name": "com.projects.enzoftware.metalball"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDzTZfPw1aVwXugmH4hUKrxPbqm8lWTEQc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -20,6 +20,9 @@ import android.view.SurfaceView
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.google.firebase.firestore.FirebaseFirestore
+import android.util.Log
+import com.google.firebase.firestore.CollectionReference
 
 
 class MetalBall : AppCompatActivity() , SensorEventListener {
@@ -27,9 +30,10 @@ class MetalBall : AppCompatActivity() , SensorEventListener {
     private var mSensorManager : SensorManager ?= null
     private var mAccelerometer : Sensor ?= null
     var ground : GroundView ?= null
-
+    private var firestore: FirebaseFirestore? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
+
         requestWindowFeature(Window.FEATURE_NO_TITLE)
         super.onCreate(savedInstanceState)
         // get reference of the service
@@ -38,6 +42,9 @@ class MetalBall : AppCompatActivity() , SensorEventListener {
         mAccelerometer = mSensorManager!!.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
         // setup the window
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+
+        // Inicializar Firestore
+        firestore = FirebaseFirestore.getInstance()
 
         window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                         WindowManager.LayoutParams.FLAG_FULLSCREEN)
@@ -113,7 +120,18 @@ class MetalBall : AppCompatActivity() , SensorEventListener {
 }
 
 
-class GroundView(context: Context?) : SurfaceView(context), SurfaceHolder.Callback{
+class GroundView(context: Context?) : SurfaceView(context), SurfaceHolder.Callback {
+
+
+    var firestore: FirebaseFirestore? = FirebaseFirestore.getInstance()
+    // Después de obtener la referencia a la colección y al documento
+    val docRef = firestore?.collection("ubicaciones")?.document("esfera")
+    init {
+
+        firestore = FirebaseFirestore.getInstance()
+
+    }
+
 
     // ball coordinates
     var cx : Float = 10.toFloat()
@@ -191,51 +209,77 @@ class GroundView(context: Context?) : SurfaceView(context), SurfaceHolder.Callba
         }
     }
 
-    fun updateMe(inx : Float , iny : Float){
+    fun updateMe(inx: Float, iny: Float) {
         lastGx += inx
         lastGy += iny
 
-        cx += lastGx
-        cy += lastGy
+        val newCx = cx + lastGx
+        val newCy = cy + lastGy
 
-        if(cx > (Windowwidth - picWidth)){
+        if (newCx > (Windowwidth - picWidth)) {
             cx = (Windowwidth - picWidth).toFloat()
             lastGx = 0F
-            if (noBorderX){
+            if (noBorderX) {
                 vibratorService!!.vibrate(100)
                 noBorderX = false
             }
-        }
-        else if(cx < (0)){
+        } else if (newCx < 0) {
             cx = 0F
             lastGx = 0F
-            if(noBorderX){
+            if (noBorderX) {
                 vibratorService!!.vibrate(100)
                 noBorderX = false
             }
+        } else {
+            noBorderX = true
+            cx = newCx
         }
-        else{ noBorderX = true }
 
-        if (cy > (Windowheight - picHeight)){
+        if (newCy > (Windowheight - picHeight)) {
             cy = (Windowheight - picHeight).toFloat()
             lastGy = 0F
-            if (noBorderY){
+            if (noBorderY) {
                 vibratorService!!.vibrate(100)
                 noBorderY = false
             }
-        }
-
-        else if(cy < (0)){
+        } else if (newCy < 0) {
             cy = 0F
             lastGy = 0F
-            if (noBorderY){
+            if (noBorderY) {
                 vibratorService!!.vibrate(100)
-                noBorderY= false
+                noBorderY = false
             }
+        } else {
+            noBorderY = true
+            cy = newCy
         }
-        else{ noBorderY = true }
 
         invalidate()
 
+        // Agrega un listener para escuchar cambios en el documento
+        docRef?.addSnapshotListener { snapshot, e ->
+            if (e != null) {
+                Log.e("TAG", "Error al escuchar cambios en Firestore", e)
+                return@addSnapshotListener
+            }
+
+            if (snapshot != null && snapshot.exists()) {
+                // Documento existe, actualiza la posición local según los datos de Firestore
+                val newCx = snapshot.getDouble("cx")
+                val newCy = snapshot.getDouble("cy")
+
+                // Actualiza la posición local
+                if (newCx != null && newCy != null) {
+                    cx = newCx.toFloat()
+                    cy = newCy.toFloat()
+                    invalidate()
+                }
+            } else {
+                Log.d("TAG", "Documento 'esfera' no existe")
+            }
+        }
     }
+
+
+
 }
